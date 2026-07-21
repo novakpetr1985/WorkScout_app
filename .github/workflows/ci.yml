@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - test
+      - main
+      - "release/**"
+  push:
+    branches:
+      - dev
+      - test
+      - main
+      - "release/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Validate pull request direction
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        run: |
+          $head = "${{ github.head_ref }}"
+          $base = "${{ github.base_ref }}"
+          $allowed =
+            (($head -like 'feature/*') -and ($base -eq 'dev')) -or
+            (($head -like 'chore/*') -and ($base -eq 'dev')) -or
+            (($head -eq 'dev') -and ($base -eq 'test')) -or
+            (($head -eq 'test') -and ($base -like 'release/*')) -or
+            (($head -like 'fix/*') -and ($base -like 'release/*')) -or
+            (($head -like 'hotfix/*') -and ($base -like 'release/*')) -or
+            (($head -like 'release/*') -and ($base -eq 'main')) -or
+            (($head -eq 'main') -and ($base -eq 'dev'))
+
+          if (-not $allowed) {
+            throw "Nepovolený směr PR: $head -> $base. Viz docs/GIT_WORKFLOW.md."
+          }
+
+          $releaseBranch = if ($base -like 'release/*') { $base } elseif ($head -like 'release/*') { $head } else { $null }
+          if ($releaseBranch) {
+            $props = [xml](Get-Content Version.props)
+            $version = $props.Project.PropertyGroup[0].VersionPrefix
+            $branchVersion = $releaseBranch.Substring('release/'.Length)
+            if ($branchVersion -ne $version) {
+              throw "Větev $releaseBranch neodpovídá VersionPrefix $version."
+            }
+          }
+
+      - name: Resolve build channel
+        shell: pwsh
+        run: |
+          $branch = if ("${{ github.event_name }}" -eq "pull_request") {
+            "${{ github.head_ref }}"
+          } else {
+            "${{ github.ref_name }}"
+          }
+
+          $channel = switch -Wildcard ($branch) {
+            "feature/*" { "feature"; break }
+            "chore/*" { "feature"; break }
+            "fix/*" { "rc"; break }
+            "hotfix/*" { "rc"; break }
+            "dev" { "dev"; break }
+            "test" { "test"; break }
+            "release/*" { "rc"; break }
+            "main" { "stable"; break }
+            default { "feature" }
+          }
+
+          "BUILD_CHANNEL=$channel" >> $env:GITHUB_ENV
+          "Build channel: $channel"
+
+      - name: Restore tools
+        run: dotnet tool restore --configfile NuGet.Config
+
+      - name: Restore packages
+        run: dotnet restore WorkScout.slnx --configfile NuGet.Config
+
+      - name: Verify formatting
+        run: dotnet format WorkScout.slnx --no-restore --verify-no-changes
+
+      - name: Build
+        run: dotnet build WorkScout.slnx -c Release --no-restore -p:BuildChannel=${{ env.BUILD_CHANNEL }}
+
+      - name: Test with coverage
+        run: dotnet test WorkScout.slnx -c Release --no-restore --no-build -p:BuildChannel=${{ env.BUILD_CHANNEL }} --collect:"XPlat Code Coverage" --logger "trx" --results-directory TestResults
+
+      - name: Audit NuGet packages
+        run: |
+          dotnet package list --project WorkScout_app.csproj --include-transitive --vulnerable --configfile NuGet.Config --no-restore
+          dotnet package list --project tests/WorkScout.UnitTests/WorkScout.UnitTests.csproj --include-transitive --vulnerable --configfile NuGet.Config --no-restore
+          dotnet package list --project tests/WorkScout.IntegrationTests/WorkScout.IntegrationTests.csproj --include-transitive --vulnerable --configfile NuGet.Config --no-restore
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.run_number }}
+          path: TestResults/
+          if-no-files-found: warn
+          retention-days: 14

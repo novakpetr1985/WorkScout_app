@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="WorkScout_app.csproj" />
+  <Project Path="tests\WorkScout.UnitTests\WorkScout.UnitTests.csproj" />
+  <Project Path="tests\WorkScout.IntegrationTests\WorkScout.IntegrationTests.csproj" />
+</Solution>

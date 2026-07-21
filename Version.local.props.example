@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Povolené hodnoty: feature, dev, test, rc, stable. -->
+    <BuildChannel>dev</BuildChannel>
+  </PropertyGroup>
+</Project>

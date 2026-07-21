@@ -1,0 +1,24 @@
+<Project>
+  <PropertyGroup>
+    <!-- VersionPrefix se zvýší až po vydání tagu. Kanál určuje CI nebo lokální override. -->
+    <VersionPrefix>1.0.0</VersionPrefix>
+  </PropertyGroup>
+
+  <Import Project="Version.local.props" Condition="Exists('Version.local.props')" />
+
+  <PropertyGroup>
+    <BuildChannel Condition="'$(BuildChannel)' == ''">feature</BuildChannel>
+    <VersionSuffix Condition="'$(BuildChannel)' != 'stable'">$(BuildChannel)</VersionSuffix>
+    <Version Condition="'$(BuildChannel)' != 'stable'">$(VersionPrefix)-$(VersionSuffix)</Version>
+    <Version Condition="'$(BuildChannel)' == 'stable'">$(VersionPrefix)</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>$(VersionPrefix).0</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
+  </PropertyGroup>
+
+  <Target Name="ValidateBuildChannel" BeforeTargets="PrepareForBuild">
+    <Error
+      Condition="'$(BuildChannel)' != 'feature' and '$(BuildChannel)' != 'dev' and '$(BuildChannel)' != 'test' and '$(BuildChannel)' != 'rc' and '$(BuildChannel)' != 'stable'"
+      Text="Neplatný BuildChannel '$(BuildChannel)'. Použij feature, dev, test, rc nebo stable." />
+  </Target>
+</Project>
