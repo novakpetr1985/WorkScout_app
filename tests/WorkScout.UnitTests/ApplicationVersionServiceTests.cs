@@ -12,7 +12,7 @@ public class ApplicationVersionServiceTests
         {
             Assert.That(
                 ApplicationVersionService.Current,
-                Does.Match(@"^1\.0\.0(?:-(?:feature|dev|test|rc))?$"));
+                Does.Match(@"^1\.0\.0(?:-(?:feature|DEV|TEST))?$"));
             Assert.That(
                 ApplicationVersionService.DisplayName,
                 Is.EqualTo($"WorkScout {ApplicationVersionService.Current}"));

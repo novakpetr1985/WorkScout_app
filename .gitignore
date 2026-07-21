@@ -29,7 +29,6 @@ packages/
 *.snk
 appsettings.Local.json
 secrets.json
-Version.local.props
 
 # Visual Studio, VS Code and Rider
 .vs/

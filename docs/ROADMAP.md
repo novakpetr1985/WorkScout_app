@@ -17,7 +17,7 @@ jménem uživatele odesláno.
 - Odpovědi automatů se filtrují, aby nevznikly e-mailové smyčky.
 - Citlivá data zůstávají lokální, dokud uživatel výslovně nezvolí jinak.
 
-## Etapa 1 – základ (0.1.x)
+## Etapa 1 – základ (1.0.x)
 
 - [x] WPF, MVVM, SQLite a migrace.
 - [x] Jednorázové nastavení dvou e-mailových adres.
@@ -27,7 +27,7 @@ jménem uživatele odesláno.
 - [ ] Detail nabídky a ruční vytvoření konceptu žádosti.
 - [ ] Správa cest k CV bez ukládání příloh do databáze.
 
-## Etapa 2 – první skutečný zdroj (0.2.x)
+## Etapa 2 – první skutečný zdroj (1.1.x)
 
 - Prověřit podmínky a veřejné možnosti vybraného českého pracovního portálu.
 - Implementovat jeden `IJobSource` adaptér.
@@ -35,7 +35,7 @@ jménem uživatele odesláno.
 - Ukládat první a poslední čas nalezení nabídky.
 - Zobrazit chybu jednotlivého zdroje bez pádu celé aktualizace.
 
-## Etapa 3 – řízení žádostí (0.3.x)
+## Etapa 3 – řízení žádostí (1.2.x)
 
 - Stavy: koncept, čeká na schválení, odesláno, odpověď, pohovor, zamítnuto,
   nabídka a staženo.
@@ -43,7 +43,7 @@ jménem uživatele odesláno.
 - Náhled celé zprávy před odesláním.
 - Auditní záznam odeslání a ruční změny stavu.
 
-## Etapa 4 – příchozí komunikace (0.4.x)
+## Etapa 4 – příchozí komunikace (1.3.x)
 
 - Pravidelné načítání zpráv z aplikační schránky.
 - Přiřazování odpovědí k žádostem podle vláken a identifikátorů zpráv.
