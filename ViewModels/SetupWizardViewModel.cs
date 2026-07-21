@@ -1,0 +1,157 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using WorkScout.Data;
+using WorkScout.Models;
+using WorkScout.Services;
+using MimeKit;
+
+namespace WorkScout.ViewModels
+{
+    /// <summary>
+    /// FEATURE: FIRST-RUN SETUP — řídí ověření Gmailu, bezpečné uložení konfigurace
+    /// nebo explicitní přechod do režimu bez síťové komunikace.
+    /// </summary>
+    public partial class SetupWizardViewModel : ObservableObject
+    {
+        private readonly EmailConnectionService _emailService = new();
+
+        [ObservableProperty]
+        private string appEmail = string.Empty;
+
+        // SECURITY: Hodnota žije v paměti jen během setupu a do DB jde až DPAPI ciphertext.
+        [ObservableProperty]
+        private string appPassword = string.Empty;
+
+        [NotifyCanExecuteChangedFor(nameof(FinishCommand))]
+        [ObservableProperty]
+        private string userEmail = string.Empty;
+
+        [ObservableProperty]
+        private string verificationMessage = string.Empty;
+
+        [ObservableProperty]
+        private bool isVerifying;
+
+        [NotifyCanExecuteChangedFor(nameof(FinishCommand))]
+        [ObservableProperty]
+        private bool isVerified;
+
+        [ObservableProperty]
+        private bool isSaving;
+
+        // FEATURE: SETUP NAVIGATION — ViewModel neotevírá WPF okna přímo.
+        public event Action? SetupCompleted;
+
+        partial void OnAppEmailChanged(string value) => InvalidateVerification();
+
+        partial void OnAppPasswordChanged(string value) => InvalidateVerification();
+
+        private void InvalidateVerification()
+        {
+            IsVerified = false;
+            VerificationMessage = string.Empty;
+        }
+
+        [RelayCommand]
+        private async Task VerifyConnectionAsync()
+        {
+            if (string.IsNullOrWhiteSpace(AppEmail) || string.IsNullOrWhiteSpace(AppPassword))
+            {
+                VerificationMessage = "Vyplň e-mail a app password.";
+                return;
+            }
+
+            IsVerifying = true;
+            IsVerified = false;
+            VerificationMessage = "Ověřuji připojení...";
+
+            try
+            {
+                AppEmail = AppEmail.Trim();
+                AppPassword = AppPassword.Replace(" ", string.Empty, StringComparison.Ordinal);
+
+                if (!MailboxAddress.TryParse(AppEmail, out _))
+                {
+                    VerificationMessage = "E-mail pro aplikaci nemá platný formát.";
+                    return;
+                }
+
+                var result = await _emailService.VerifyConnectionAsync(AppEmail, AppPassword);
+                IsVerified = result.Success;
+                VerificationMessage = result.Message;
+            }
+            finally
+            {
+                IsVerifying = false;
+            }
+        }
+
+        private bool CanFinish() =>
+            IsVerified && !IsSaving && MailboxAddress.TryParse(UserEmail.Trim(), out _);
+
+        [RelayCommand(CanExecute = nameof(CanFinish))]
+        private async Task FinishAsync()
+        {
+            try
+            {
+                IsSaving = true;
+                FinishCommand.NotifyCanExecuteChanged();
+                UserEmail = UserEmail.Trim();
+
+                using var db = new AppDbContext();
+                var settings = await db.AppSettings.FindAsync(1);
+                if (settings is null)
+                {
+                    settings = new AppSettingsEntity { Id = 1 };
+                    db.AppSettings.Add(settings);
+                }
+
+                settings.AppEmail = AppEmail;
+                settings.AppPasswordEncrypted = SecureStorageService.Encrypt(AppPassword);
+                settings.UserEmail = UserEmail;
+                settings.IsConfigured = true;
+                settings.IsDemoMode = false;
+                await db.SaveChangesAsync();
+
+                try
+                {
+                    await _emailService.SendTestEmailAsync(AppEmail, AppPassword, UserEmail);
+                }
+                catch
+                {
+                    // FEATURE: RESILIENT SETUP
+                    // Ověření IMAP/SMTP už proběhlo. Selhání nepovinné kontrolní zprávy
+                    // proto nezneplatní uloženou konfiguraci ani nezablokuje první start.
+                }
+
+                SetupCompleted?.Invoke();
+            }
+            finally
+            {
+                IsSaving = false;
+                FinishCommand.NotifyCanExecuteChanged();
+            }
+        }
+
+        [RelayCommand]
+        private async Task ContinueInDemoModeAsync()
+        {
+            using var db = new AppDbContext();
+            var settings = await db.AppSettings.FindAsync(1);
+            if (settings is null)
+            {
+                settings = new AppSettingsEntity { Id = 1 };
+                db.AppSettings.Add(settings);
+            }
+
+            settings.AppEmail = string.Empty;
+            settings.AppPasswordEncrypted = string.Empty;
+            settings.UserEmail = string.Empty;
+            settings.IsConfigured = true;
+            settings.IsDemoMode = true;
+            await db.SaveChangesAsync();
+
+            SetupCompleted?.Invoke();
+        }
+    }
+}
