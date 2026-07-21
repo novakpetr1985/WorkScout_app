@@ -1,0 +1,36 @@
+<Window x:Class="WorkScout.Views.SetupWizardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="První nastavení – WorkScout" Height="500" Width="460"
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
+    <StackPanel Margin="20">
+
+        <TextBlock Text="1. E-mail pro aplikaci (Gmail)" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Text="Nový Gmail účet založený jen pro tuhle aplikaci." Foreground="Gray" Margin="0,0,0,8" TextWrapping="Wrap"/>
+
+        <TextBox Text="{Binding AppEmail, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6"/>
+        <PasswordBox x:Name="AppPasswordBox" PasswordChanged="AppPasswordBox_PasswordChanged" Margin="0,0,0,4"/>
+        <TextBlock Text="App password (16 znaků) z nastavení účtu - ne běžné heslo k Gmailu."
+                   Foreground="Gray" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap"/>
+
+        <Button Content="Ověřit připojení" Command="{Binding VerifyConnectionCommand}"
+                HorizontalAlignment="Left" Padding="10,4"/>
+        <TextBlock Text="{Binding VerificationMessage}" Margin="0,8,0,20" TextWrapping="Wrap"/>
+
+        <TextBlock Text="2. E-mail pro upozornění" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Text="Sem budou chodit reporty a odkazy na komunikaci u automatických odpovědí."
+                   Foreground="Gray" Margin="0,0,0,8" TextWrapping="Wrap"/>
+        <TextBox Text="{Binding UserEmail, UpdateSourceTrigger=PropertyChanged}"
+                 IsEnabled="{Binding IsVerified}" Margin="0,0,0,16"/>
+
+        <Button Content="Dokončit nastavení" Command="{Binding FinishCommand}"
+                HorizontalAlignment="Right" Padding="10,4"/>
+
+        <Separator Margin="0,18,0,12"/>
+        <TextBlock Text="Chceš si zatím jen prohlédnout základ aplikace? Demo režim nečte ani neodesílá e-maily."
+                   Foreground="Gray" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"/>
+        <Button Content="Pokračovat v ukázkovém režimu"
+                Command="{Binding ContinueInDemoModeCommand}"
+                HorizontalAlignment="Left" Padding="10,4"/>
+    </StackPanel>
+</Window>

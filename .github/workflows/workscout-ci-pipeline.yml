@@ -1,0 +1,354 @@
+name: WorkScout CI Pipeline
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "*"
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: "Safely simulate a CI failure and verify the diagnostic artifact"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: windows-latest
+    outputs:
+      outcome: ${{ steps.summary.outputs.outcome }}
+      total: ${{ steps.summary.outputs.total }}
+      executed: ${{ steps.summary.outputs.executed }}
+      passed: ${{ steps.summary.outputs.passed }}
+      failed: ${{ steps.summary.outputs.failed }}
+      skipped: ${{ steps.summary.outputs.skipped }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', '.config/dotnet-tools.json') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Restore solution
+        run: dotnet restore WorkScout.slnx --configfile NuGet.Config
+
+      - name: Verify formatting
+        run: dotnet format WorkScout.slnx --no-restore --verify-no-changes
+
+      - name: Build unit tests
+        run: dotnet build tests/WorkScout.UnitTests/WorkScout.UnitTests.csproj --configuration Release --no-restore
+
+      - name: Run unit tests
+        run: dotnet test tests/WorkScout.UnitTests/WorkScout.UnitTests.csproj --configuration Release --no-build --no-restore --verbosity normal --logger trx --results-directory TestResults/Unit --collect:"XPlat Code Coverage"
+
+      - name: Audit NuGet packages
+        run: |
+          dotnet package list --project WorkScout_app.csproj --include-transitive --vulnerable --configfile NuGet.Config --no-restore
+          dotnet package list --project tests/WorkScout.UnitTests/WorkScout.UnitTests.csproj --include-transitive --vulnerable --configfile NuGet.Config --no-restore
+          dotnet package list --project tests/WorkScout.IntegrationTests/WorkScout.IntegrationTests.csproj --include-transitive --vulnerable --configfile NuGet.Config --no-restore
+
+      - name: Summarize unit tests
+        id: summary
+        if: always()
+        shell: pwsh
+        run: |
+          $file = Get-ChildItem TestResults/Unit -Filter *.trx -Recurse -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime | Select-Object -Last 1
+          $values = [ordered]@{ outcome = "not run"; total = 0; executed = 0; passed = 0; failed = 0; skipped = 0 }
+          if ($file) {
+            [xml] $xml = Get-Content $file.FullName
+            $summary = $xml.SelectSingleNode("//*[local-name()='ResultSummary']")
+            $counters = $xml.SelectSingleNode("//*[local-name()='ResultSummary']/*[local-name()='Counters']")
+            $values.outcome = $summary.outcome
+            $values.total = $counters.total
+            $values.executed = $counters.executed
+            $values.passed = $counters.passed
+            $values.failed = $counters.failed
+            $values.skipped = $counters.notExecuted
+          }
+          foreach ($entry in $values.GetEnumerator()) {
+            "$($entry.Key)=$($entry.Value)" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
+          }
+          "### Unit tests" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          "| Outcome | Total | Executed | Passed | Failed | Skipped |" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          "|---|---:|---:|---:|---:|---:|" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          "| $($values.outcome) | $($values.total) | $($values.executed) | $($values.passed) | $($values.failed) | $($values.skipped) |" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+      - name: Upload unit coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workscout-unit-coverage
+          path: TestResults/Unit/**/coverage.cobertura.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload failed unit test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workscout-unit-test-results
+          path: TestResults/Unit
+          retention-days: 14
+
+  integration:
+    name: Integration tests
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    runs-on: windows-latest
+    outputs:
+      outcome: ${{ steps.summary.outputs.outcome }}
+      total: ${{ steps.summary.outputs.total }}
+      executed: ${{ steps.summary.outputs.executed }}
+      passed: ${{ steps.summary.outputs.passed }}
+      failed: ${{ steps.summary.outputs.failed }}
+      skipped: ${{ steps.summary.outputs.skipped }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props', '**/*.targets', '.config/dotnet-tools.json') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Restore integration tests
+        run: dotnet restore tests/WorkScout.IntegrationTests/WorkScout.IntegrationTests.csproj --configfile NuGet.Config
+
+      - name: Build integration tests
+        run: dotnet build tests/WorkScout.IntegrationTests/WorkScout.IntegrationTests.csproj --configuration Release --no-restore
+
+      - name: Run integration tests
+        run: dotnet test tests/WorkScout.IntegrationTests/WorkScout.IntegrationTests.csproj --configuration Release --no-build --no-restore --verbosity normal --logger trx --results-directory TestResults/Integration --collect:"XPlat Code Coverage"
+
+      - name: Summarize integration tests
+        id: summary
+        if: always()
+        shell: pwsh
+        run: |
+          $file = Get-ChildItem TestResults/Integration -Filter *.trx -Recurse -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime | Select-Object -Last 1
+          $values = [ordered]@{ outcome = "not run"; total = 0; executed = 0; passed = 0; failed = 0; skipped = 0 }
+          if ($file) {
+            [xml] $xml = Get-Content $file.FullName
+            $summary = $xml.SelectSingleNode("//*[local-name()='ResultSummary']")
+            $counters = $xml.SelectSingleNode("//*[local-name()='ResultSummary']/*[local-name()='Counters']")
+            $values.outcome = $summary.outcome
+            $values.total = $counters.total
+            $values.executed = $counters.executed
+            $values.passed = $counters.passed
+            $values.failed = $counters.failed
+            $values.skipped = $counters.notExecuted
+          }
+          foreach ($entry in $values.GetEnumerator()) {
+            "$($entry.Key)=$($entry.Value)" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
+          }
+          "### Integration tests" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          "| Outcome | Total | Executed | Passed | Failed | Skipped |" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          "|---|---:|---:|---:|---:|---:|" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          "| $($values.outcome) | $($values.total) | $($values.executed) | $($values.passed) | $($values.failed) | $($values.skipped) |" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+      - name: Upload integration coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workscout-integration-coverage
+          path: TestResults/Integration/**/coverage.cobertura.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload failed integration test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workscout-integration-test-results
+          path: TestResults/Integration
+          retention-days: 14
+
+  ci:
+    name: Build and test
+    if: always()
+    needs:
+      - unit
+      - integration
+    runs-on: windows-latest
+    steps:
+      - name: Verify required CI jobs
+        shell: pwsh
+        env:
+          UNIT_RESULT: ${{ needs.unit.result }}
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
+          UNIT_OUTCOME: ${{ needs.unit.outputs.outcome }}
+          UNIT_TOTAL: ${{ needs.unit.outputs.total }}
+          UNIT_EXECUTED: ${{ needs.unit.outputs.executed }}
+          UNIT_PASSED: ${{ needs.unit.outputs.passed }}
+          UNIT_FAILED: ${{ needs.unit.outputs.failed }}
+          UNIT_SKIPPED: ${{ needs.unit.outputs.skipped }}
+          INTEGRATION_OUTCOME: ${{ needs.integration.outputs.outcome }}
+          INTEGRATION_TOTAL: ${{ needs.integration.outputs.total }}
+          INTEGRATION_EXECUTED: ${{ needs.integration.outputs.executed }}
+          INTEGRATION_PASSED: ${{ needs.integration.outputs.passed }}
+          INTEGRATION_FAILED: ${{ needs.integration.outputs.failed }}
+          INTEGRATION_SKIPPED: ${{ needs.integration.outputs.skipped }}
+        run: |
+          "# WorkScout CI Summary" | Out-File workscout-ci-summary.md -Encoding utf8
+          "" | Out-File workscout-ci-summary.md -Append -Encoding utf8
+          "- Timestamp: $(Get-Date -Format o)" | Out-File workscout-ci-summary.md -Append -Encoding utf8
+          "- Event: $env:GITHUB_EVENT_NAME" | Out-File workscout-ci-summary.md -Append -Encoding utf8
+          "- Ref: $env:GITHUB_REF" | Out-File workscout-ci-summary.md -Append -Encoding utf8
+          "- Commit: $env:GITHUB_SHA" | Out-File workscout-ci-summary.md -Append -Encoding utf8
+          "" | Out-File workscout-ci-summary.md -Append -Encoding utf8
+          "| Suite | Job | Outcome | Total | Executed | Passed | Failed | Skipped |" | Out-File workscout-ci-summary.md -Append -Encoding utf8
+          "|---|---|---|---:|---:|---:|---:|---:|" | Out-File workscout-ci-summary.md -Append -Encoding utf8
+          "| Unit | $env:UNIT_RESULT | $env:UNIT_OUTCOME | $env:UNIT_TOTAL | $env:UNIT_EXECUTED | $env:UNIT_PASSED | $env:UNIT_FAILED | $env:UNIT_SKIPPED |" | Out-File workscout-ci-summary.md -Append -Encoding utf8
+          if ($env:INTEGRATION_RESULT -eq "skipped") {
+            "| Integration | skipped | not required for ordinary push | - | - | - | - | - |" | Out-File workscout-ci-summary.md -Append -Encoding utf8
+          } else {
+            "| Integration | $env:INTEGRATION_RESULT | $env:INTEGRATION_OUTCOME | $env:INTEGRATION_TOTAL | $env:INTEGRATION_EXECUTED | $env:INTEGRATION_PASSED | $env:INTEGRATION_FAILED | $env:INTEGRATION_SKIPPED |" | Out-File workscout-ci-summary.md -Append -Encoding utf8
+          }
+          Get-Content workscout-ci-summary.md | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+          $required = @($env:UNIT_RESULT, $env:INTEGRATION_RESULT)
+          $failed = $required | Where-Object { $_ -notin @("success", "skipped") }
+          if ($failed) {
+            Write-Error "At least one required CI job failed or was cancelled."
+            exit 1
+          }
+
+          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch" -and "${{ inputs.simulate_failure }}" -eq "true") {
+            Write-Error "Intentional failure requested by workflow_dispatch."
+            exit 1
+          }
+
+      - name: Upload short CI summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workscout-ci-summary
+          path: workscout-ci-summary.md
+          retention-days: 14
+
+  release:
+    name: Release publish
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: ci
+    runs-on: windows-latest
+    environment:
+      name: manual-approval
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Validate stable version and tag
+        shell: pwsh
+        run: |
+          [xml] $project = Get-Content WorkScout_app.csproj
+          $version = ($project.Project.PropertyGroup | Where-Object Version | Select-Object -First 1).Version
+          if ($version -match '-') {
+            throw "Tag lze publikovat pouze ze stabilní verze bez suffixu. Aktuální verze: $version"
+          }
+          if ($env:GITHUB_REF_NAME -ne "v$version") {
+            throw "Tag $env:GITHUB_REF_NAME neodpovídá verzi $version."
+          }
+
+      - name: Publish application
+        shell: pwsh
+        run: ./scripts/commands/run-publish.ps1
+
+      - name: Upload portable application
+        uses: actions/upload-artifact@v4
+        with:
+          name: workscout-portable-win-x64
+          path: artifacts/publish/WorkScout-*-win-x64
+          retention-days: 30
+
+      - name: Upload release archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: workscout-release-win-x64
+          path: |
+            artifacts/release/*.zip
+            artifacts/release/SHA256.txt
+          if-no-files-found: error
+          retention-days: 30
+
+  diagnostic:
+    name: Diagnostic log
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    needs:
+      - ci
+      - release
+    runs-on: windows-latest
+    env:
+      CI_JOB_RESULT: ${{ needs.ci.result }}
+      RELEASE_JOB_RESULT: ${{ needs.release.result }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Generate detailed failure log
+        shell: pwsh
+        run: |
+          "============================================================" | Out-File workscout-ci-error.log
+          "WORKSCOUT CI DIAGNOSTIC LOG" | Out-File workscout-ci-error.log -Append
+          "Workflow: $env:GITHUB_WORKFLOW" | Out-File workscout-ci-error.log -Append
+          "Run URL: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID" | Out-File workscout-ci-error.log -Append
+          "Timestamp: $(Get-Date -Format o)" | Out-File workscout-ci-error.log -Append
+          "Ref: $env:GITHUB_REF" | Out-File workscout-ci-error.log -Append
+          "Commit: $env:GITHUB_SHA" | Out-File workscout-ci-error.log -Append
+          "Event: $env:GITHUB_EVENT_NAME" | Out-File workscout-ci-error.log -Append
+          "CI result: $env:CI_JOB_RESULT" | Out-File workscout-ci-error.log -Append
+          "Release result: $env:RELEASE_JOB_RESULT" | Out-File workscout-ci-error.log -Append
+          "Dotnet SDK: $(dotnet --version)" | Out-File workscout-ci-error.log -Append
+          "============================================================" | Out-File workscout-ci-error.log -Append
+          dotnet restore WorkScout.slnx --verbosity detailed *>> workscout-ci-error.log
+          dotnet build WorkScout.slnx --configuration Release --no-restore --verbosity detailed *>> workscout-ci-error.log
+          dotnet test tests/WorkScout.UnitTests/WorkScout.UnitTests.csproj --configuration Release --verbosity detailed *>> workscout-ci-error.log
+          if ($env:GITHUB_EVENT_NAME -eq "pull_request" -or $env:GITHUB_REF -like "refs/tags/*") {
+            dotnet test tests/WorkScout.IntegrationTests/WorkScout.IntegrationTests.csproj --configuration Release --verbosity detailed *>> workscout-ci-error.log
+          }
+
+      - name: Upload diagnostic log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workscout-ci-error-log
+          path: workscout-ci-error.log
+          retention-days: 14
