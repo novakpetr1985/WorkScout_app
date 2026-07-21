@@ -1,7 +1,11 @@
 using System.Reflection;
 
-namespace JobSearchApp.Services
+namespace WorkScout.Services
 {
+    /// <summary>
+    /// FEATURE: VERSION DISPLAY — čte informační verzi sestavení a odstraňuje pouze
+    /// technický commit hash za znakem +, aby UI zachovalo suffix feature/DEV/TEST.
+    /// </summary>
     public static class ApplicationVersionService
     {
         public static string Current { get; } = ResolveVersion();

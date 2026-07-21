@@ -1,12 +1,16 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using JobSearchApp.Data;
-using JobSearchApp.Models;
-using JobSearchApp.Services;
+using WorkScout.Data;
+using WorkScout.Models;
+using WorkScout.Services;
 using MimeKit;
 
-namespace JobSearchApp.ViewModels
+namespace WorkScout.ViewModels
 {
+    /// <summary>
+    /// FEATURE: FIRST-RUN SETUP — řídí ověření Gmailu, bezpečné uložení konfigurace
+    /// nebo explicitní přechod do režimu bez síťové komunikace.
+    /// </summary>
     public partial class SetupWizardViewModel : ObservableObject
     {
         private readonly EmailConnectionService _emailService = new();
@@ -14,8 +18,7 @@ namespace JobSearchApp.ViewModels
         [ObservableProperty]
         private string appEmail = string.Empty;
 
-        // Naplňuje se z code-behind PasswordBoxu (viz SetupWizardWindow.xaml.cs) -
-        // PasswordBox.Password nejde přímo bindovat kvůli bezpečnosti.
+        // SECURITY: Hodnota žije v paměti jen během setupu a do DB jde až DPAPI ciphertext.
         [ObservableProperty]
         private string appPassword = string.Empty;
 
@@ -36,7 +39,7 @@ namespace JobSearchApp.ViewModels
         [ObservableProperty]
         private bool isSaving;
 
-        // Code-behind na tohle naváže otevření MainWindow a zavření wizardu.
+        // FEATURE: SETUP NAVIGATION — ViewModel neotevírá WPF okna přímo.
         public event Action? SetupCompleted;
 
         partial void OnAppEmailChanged(string value) => InvalidateVerification();
@@ -116,8 +119,9 @@ namespace JobSearchApp.ViewModels
                 }
                 catch
                 {
-                    // Připojení už bylo ověřeno. Dočasný výpadek při odeslání
-                    // testovací zprávy proto neblokuje dokončení konfigurace.
+                    // FEATURE: RESILIENT SETUP
+                    // Ověření IMAP/SMTP už proběhlo. Selhání nepovinné kontrolní zprávy
+                    // proto nezneplatní uloženou konfiguraci ani nezablokuje první start.
                 }
 
                 SetupCompleted?.Invoke();

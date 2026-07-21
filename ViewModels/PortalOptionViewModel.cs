@@ -1,8 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using JobSearchApp.Models;
+using WorkScout.Models;
 
-namespace JobSearchApp.ViewModels
+namespace WorkScout.ViewModels
 {
+    /// <summary>
+    /// FEATURE: PORTAL FILTER — propojuje jednu checkbox volbu s uložením preference do DB.
+    /// </summary>
     public partial class PortalOptionViewModel : ObservableObject
     {
         public int Id { get; }

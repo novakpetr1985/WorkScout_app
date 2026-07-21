@@ -1,7 +1,13 @@
-using JobSearchApp.Models;
+using WorkScout.Models;
 
-namespace JobSearchApp.Services
+namespace WorkScout.Services
 {
+    /// <summary>
+    /// EXTENSION POINT: JOB SOURCES
+    /// Jednotný kontrakt pro demo data, veřejná API, feedy i portálové adaptéry.
+    /// Implementace nesmí aktualizovat UI ani ukládat credentials; vrací pouze
+    /// normalizované nabídky a respektuje zrušení operace.
+    /// </summary>
     public interface IJobSource
     {
         string Name { get; }

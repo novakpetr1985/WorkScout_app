@@ -1,5 +1,9 @@
-namespace JobSearchApp.Models
+namespace WorkScout.Models
 {
+    /// <summary>
+    /// EXTENSION POINT: APPLICATION FLOW — budoucí žádost navázaná na nabídku,
+    /// vybrané CV, stav odeslání a příchozí komunikaci.
+    /// </summary>
     public class JobApplication
     {
         public int Id { get; set; }

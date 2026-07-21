@@ -1,12 +1,16 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using JobSearchApp.Data;
-using JobSearchApp.Models;
-using JobSearchApp.Services;
+using WorkScout.Data;
+using WorkScout.Models;
+using WorkScout.Services;
 using System.Collections.ObjectModel;
 
-namespace JobSearchApp.ViewModels
+namespace WorkScout.ViewModels
 {
+    /// <summary>
+    /// FEATURE: MAIN DASHBOARD — načítá konfiguraci, uložené volby portálů,
+    /// normalizované nabídky a aplikuje filtry bez znalosti konkrétního zdroje dat.
+    /// </summary>
     public partial class MainViewModel : ObservableObject
     {
         private readonly IJobSource _jobSource;
@@ -38,7 +42,7 @@ namespace JobSearchApp.ViewModels
         public event Action? ResetRequested;
 
         public MainViewModel()
-            : this(new TestJobSource())
+            : this(new DemoJobSource())
         {
         }
 
@@ -111,22 +115,16 @@ namespace JobSearchApp.ViewModels
 
             try
             {
-                // TODO: DEVELOPMENT DATA
-                // TestJobSource později nahradí adaptéry IJobSource pro konkrétní portály.
+                // EXTENSION POINT: JOB SOURCES
+                // V 1.0.0 poskytuje data DemoJobSource. Produkční composition root později
+                // předá agregátor adaptérů IJobSource pro povolené pracovní portály.
                 var allListings = await _jobSource.LoadAsync();
                 var selectedPortals = Portals
                     .Where(portal => portal.IsSelected)
                     .Select(portal => portal.Name)
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                foreach (var profession in allListings
-                             .Select(listing => listing.Profession)
-                             .Distinct()
-                             .OrderBy(profession => profession))
-                {
-                    if (!Professions.Contains(profession))
-                        Professions.Add(profession);
-                }
+                UpdateProfessions(allListings);
 
                 var filtered = allListings
                     .Where(listing => selectedPortals.Contains(listing.Portal))
@@ -153,6 +151,26 @@ namespace JobSearchApp.ViewModels
             }
         }
 
+        private void UpdateProfessions(IReadOnlyList<JobListing> listings)
+        {
+            var currentSelection = SelectedProfession;
+            var availableProfessions = listings
+                .Select(listing => listing.Profession)
+                .Where(profession => !string.IsNullOrWhiteSpace(profession))
+                .Distinct(StringComparer.CurrentCultureIgnoreCase)
+                .OrderBy(profession => profession)
+                .ToList();
+
+            Professions.Clear();
+            Professions.Add("Všechny profese");
+            foreach (var profession in availableProfessions)
+                Professions.Add(profession);
+
+            SelectedProfession = currentSelection is not null && Professions.Contains(currentSelection)
+                ? currentSelection
+                : Professions[0];
+        }
+
         [RelayCommand]
         private void Reset()
         {
@@ -168,6 +186,8 @@ namespace JobSearchApp.ViewModels
             var settings = db.AppSettings.Find(1);
             if (settings is not null)
             {
+                // SECURITY: Reset odstraní pouze propojení účtu a šifrovaný app password.
+                // Budoucí historie nabídek a žádostí zůstane zachovaná.
                 settings.IsConfigured = false;
                 settings.IsDemoMode = false;
                 settings.AppEmail = string.Empty;

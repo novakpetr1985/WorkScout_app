@@ -1,7 +1,7 @@
-using JobSearchApp.ViewModels;
+using WorkScout.ViewModels;
 using System.Windows;
 
-namespace JobSearchApp.Views
+namespace WorkScout.Views
 {
     public partial class MainWindow : Window
     {

@@ -1,4 +1,10 @@
-# WorkScout
+# 🔎 WorkScout
+
+[![Version](https://img.shields.io/badge/version-1.0.0--feature-2563eb)](WorkScout_app.csproj)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512bd4)](https://dotnet.microsoft.com/)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078d4)](https://www.microsoft.com/windows)
+[![CI](https://github.com/novakpetr1985/WorkScout_app/actions/workflows/workscout-ci-pipeline.yml/badge.svg)](https://github.com/novakpetr1985/WorkScout_app/actions/workflows/workscout-ci-pipeline.yml)
+![License](https://img.shields.io/badge/license-not%20specified-lightgrey)
 
 WorkScout `1.0.0-feature` je lokální WPF aplikace pro jednoho uživatele. Jejím
 cílem je spojit vyhledávání pracovních nabídek, přípravu žádostí, e-mailovou
@@ -8,24 +14,28 @@ Verze 1.0.0 představuje první technický a uživatelský základ. Nabídky v t
 jsou zatím demonstrační; skutečný scraper, automatické odesílání CV ani pravidelné
 čtení e-mailu tato verze ještě neobsahuje.
 
-## Mapa dokumentace
+> Osobní desktopový asistent pro vyhledávání pracovních nabídek, přípravu žádostí
+> a dohledatelnou e-mailovou komunikaci.
 
-- `README.md` — současné funkce, spuštění a technický přehled.
-- `docs/README.md` — rozcestník celé projektové dokumentace.
-- `docs/CHANGELOG.md` — změny připravované pro jednotlivé verze.
-- `docs/ROADMAP.md` — produktová vize a plán dalších etap.
-- `docs/git/BRANCH_AND_RELEASE_WORKFLOW.md` — přesný postup `release → dev/test/main`.
-- `docs/testing/AUTOMATED_TEST_ROADMAP.md` — baseline a priority automatických testů.
-- `docs/testing/MANUAL_TEST_SCENARIOS.md` — ruční release checklist.
-- `docs/ci/CI_DIAGNOSTIC_TEST.md` — bezpečné ověření diagnostického CI artefaktu.
-- `docs/releases/v1.0.0.md` — připravený popis tagu a první stabilní verze.
+## 🧭 Rychlá orientace
+
+| Oblast | Dokument |
+|---|---|
+| 📚 Kompletní rozcestník | [`docs/README.md`](docs/README.md) |
+| 🧩 Funkce a umístění v kódu | [`docs/architecture/FEATURE_MAP.md`](docs/architecture/FEATURE_MAP.md) |
+| 📝 Historie změn | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) |
+| 🗺️ Produktová vize | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
+| 🌿 Větve, PR a release | [`docs/git/BRANCH_AND_RELEASE_WORKFLOW.md`](docs/git/BRANCH_AND_RELEASE_WORKFLOW.md) |
+| 🧪 Automatické a ruční testy | [`docs/testing/`](docs/testing/) |
+| 🩺 Diagnostika CI | [`docs/ci/CI_DIAGNOSTIC_TEST.md`](docs/ci/CI_DIAGNOSTIC_TEST.md) |
+| 📦 Poznámky k vydání | [`docs/releases/v1.0.0.md`](docs/releases/v1.0.0.md) |
 
 Podrobnost patří pouze do příslušného tematického dokumentu; README na ni jen
 odkazuje, aby se stejná pravidla neudržovala na více místech.
 
 ---
 
-## Požadavky
+## 📦 Požadavky
 
 - Windows 10/11 x64.
 - Pro přenositelný framework-dependent build .NET 10 Desktop Runtime.
@@ -33,7 +43,7 @@ odkazuje, aby se stejná pravidla neudržovala na více místech.
 
 ---
 
-## Spuštění aplikace
+## 🚀 Spuštění aplikace
 
 **Visual Studio**
 
@@ -55,7 +65,7 @@ režimu**. Demo režim nečte ani neodesílá e-maily.
 
 ---
 
-## Současné funkce
+## ✨ Současné funkce
 
 - Jednorázové nastavení komunikačního Gmailu a hlavního e-mailu uživatele.
 - Ověření Gmail připojení přes IMAP a SMTP.
@@ -69,7 +79,7 @@ režimu**. Demo režim nečte ani neodesílá e-maily.
 - Oddělené unit a integrační testy.
 - Jednotná CI pipeline pro push, PR, tag, diagnostiku a release publish.
 
-## Omezení verze 1.0.0
+## 🚧 Omezení verze 1.0.0
 
 - Nenačítá skutečné nabídky pracovních portálů.
 - Neodesílá CV ani žádosti.
@@ -79,7 +89,7 @@ režimu**. Demo režim nečte ani neodesílá e-maily.
 
 ---
 
-## Připojení Gmailu
+## ✉️ Připojení Gmailu
 
 Pro aplikaci používej samostatný Gmail účet, nikoliv hlavní osobní schránku.
 
@@ -93,7 +103,7 @@ Windows DPAPI, takže je použitelný pouze pod stejným účtem Windows.
 
 ---
 
-## Data a soukromí
+## 🔐 Data a soukromí
 
 Uživatelská databáze je pouze lokální:
 
@@ -112,7 +122,7 @@ schéma.
 
 ---
 
-## Architektura
+## 🧩 Architektura
 
 | Vrstva | Umístění | Účel |
 |---|---|---|
@@ -126,9 +136,20 @@ schéma.
 
 Hlavní knihovny: CommunityToolkit.Mvvm, Entity Framework Core SQLite a MailKit.
 
+V kódu jsou rozšiřovací body označené jednotnými značkami `FEATURE:`,
+`EXTENSION POINT:`, `DEMO DATA:`, `SECURITY:` a `RELEASE:`. Jejich význam a přesná
+mapa souborů jsou v [`docs/architecture/FEATURE_MAP.md`](docs/architecture/FEATURE_MAP.md).
+
+## 🖼️ Původní návrh hlavního panelu
+
+Soubor [`WorkScout.png`](WorkScout.png) je původní wireframe dodaný k návrhu projektu.
+Zůstává verzovaný jako reference pro další úpravy UI, nikoliv jako produkční asset.
+
+![Původní wireframe hlavního panelu WorkScout](WorkScout.png)
+
 ---
 
-## Testy
+## 🧪 Testy
 
 ```powershell
 dotnet test WorkScout.slnx -c Release --collect:"XPlat Code Coverage"
@@ -139,7 +160,7 @@ dočasnou SQLite databázi a nekontaktuje Gmail ani pracovní portály.
 
 ---
 
-## GitHub Actions
+## ⚙️ GitHub Actions
 
 Workflow `.github/workflows/workscout-ci-pipeline.yml` odpovídá vzoru ElektroOffer:
 
@@ -156,7 +177,7 @@ nemůže zakázat přímý push.
 
 ---
 
-## Verzování a release flow
+## 🌿 Verzování a release flow
 
 Verze je uložena pouze v `WorkScout_app.csproj`:
 
@@ -178,7 +199,7 @@ Přesný postup a povinné změny dokumentace jsou v
 
 ---
 
-## Lokální publish
+## 🏗️ Lokální publish
 
 ```powershell
 .\scripts\commands\run-publish.ps1
@@ -193,3 +214,10 @@ artifacts/release/SHA256.txt
 ```
 
 Výstup je framework-dependent a vyžaduje .NET 10 Desktop Runtime.
+
+---
+
+## ⚖️ Licence
+
+Projekt zatím nemá přidaný licenční soubor. Do jeho doplnění není automaticky
+povolena další distribuce nebo převzetí zdrojového kódu třetími stranami.

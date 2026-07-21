@@ -1,8 +1,8 @@
-using JobSearchApp.ViewModels;
-using JobSearchApp.Services;
+using WorkScout.ViewModels;
+using WorkScout.Services;
 using System.Windows;
 
-namespace JobSearchApp.Views
+namespace WorkScout.Views
 {
     public partial class SetupWizardWindow : Window
     {
@@ -16,8 +16,8 @@ namespace JobSearchApp.Views
             _viewModel.SetupCompleted += OnSetupCompleted;
         }
 
-        // PasswordBox.Password se z bezpečnostních důvodů nedá bindovat přímo -
-        // tohle je standardní obchvat: při každé změně přepíšeme hodnotu do ViewModelu.
+        // SECURITY: WPF PasswordBox záměrně nevystavuje bindovatelnou dependency property.
+        // Code-behind pouze předá aktuální hodnotu ViewModelu; heslo se nezapisuje do XAML.
         private void AppPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
         {
             _viewModel.AppPassword = AppPasswordBox.Password;

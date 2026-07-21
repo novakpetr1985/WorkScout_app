@@ -1,11 +1,12 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace JobSearchApp.Services
+namespace WorkScout.Services
 {
-    // Zašifruje/dešifruje app password pomocí Windows DPAPI.
-    // Klíč je vázaný na přihlášeného Windows uživatele - nikdo jiný, kdo by
-    // zkopíroval soubor jobsearch.db, ho bez tvého Windows účtu nerozšifruje.
+    /// <summary>
+    /// SECURITY: Chrání Gmail app password pomocí Windows DPAPI pro aktuálního uživatele.
+    /// Přenesená databáze proto sama o sobě nestačí k dešifrování credentials pod jiným účtem.
+    /// </summary>
     public static class SecureStorageService
     {
         public static string Encrypt(string plainText)

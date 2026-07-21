@@ -1,5 +1,5 @@
-using JobSearchApp.Data;
-using JobSearchApp.Models;
+using WorkScout.Data;
+using WorkScout.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 

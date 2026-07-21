@@ -1,5 +1,5 @@
-using JobSearchApp.Models;
-using JobSearchApp.ViewModels;
+using WorkScout.Models;
+using WorkScout.ViewModels;
 
 namespace WorkScout.UnitTests;
 

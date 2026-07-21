@@ -1,14 +1,14 @@
-using JobSearchApp.Services;
+using WorkScout.Services;
 
 namespace WorkScout.UnitTests;
 
 [TestFixture]
-public class TestJobSourceTests
+public class DemoJobSourceTests
 {
     [Test]
     public async Task LoadAsync_ReturnsValidDemonstrationListings()
     {
-        var source = new TestJobSource();
+        var source = new DemoJobSource();
 
         var listings = await source.LoadAsync();
 
@@ -25,7 +25,7 @@ public class TestJobSourceTests
     [Test]
     public void LoadAsync_WithCancelledToken_ThrowsOperationCanceledException()
     {
-        var source = new TestJobSource();
+        var source = new DemoJobSource();
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
 

@@ -6,13 +6,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>WorkScout</AssemblyName>
-    <RootNamespace>JobSearchApp</RootNamespace>
+    <RootNamespace>WorkScout</RootNamespace>
     <Authors>WorkScout</Authors>
     <Description>Desktopový základ aplikace pro vyhledávání pracovních nabídek a správu žádostí.</Description>
     <RepositoryUrl>https://github.com/novakpetr1985/WorkScout_app</RepositoryUrl>
 
-    <!--
-      Verze se mění pouze zde před jednotlivými PR z release/1.0.0:
+    <!-- RELEASE: Verze se mění ručně pouze zde a vždy spolu s README a changelogem.
+      Hodnoty před jednotlivými PR z release/1.0.0:
         feature/release vývoj: 1.0.0-feature
         release -> dev:        1.0.0-DEV
         release -> test:       1.0.0-TEST

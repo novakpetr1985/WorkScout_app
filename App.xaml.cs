@@ -1,10 +1,9 @@
-using JobSearchApp.Data;
-using JobSearchApp.Views;
+using WorkScout.Data;
+using WorkScout.Views;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 using System.Windows;
 
-namespace JobSearchApp
+namespace WorkScout
 {
     public partial class App : Application
     {
@@ -14,6 +13,9 @@ namespace JobSearchApp
 
             try
             {
+                // FEATURE: STARTUP
+                // Migrace proběhnou před otevřením UI. První obrazovku určuje jediný
+                // konfigurační řádek, protože WorkScout 1.x je aplikace pro jednoho uživatele.
                 bool isConfigured;
 
                 using (var db = new AppDbContext())

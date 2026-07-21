@@ -1,5 +1,6 @@
-namespace JobSearchApp.Models
+namespace WorkScout.Models
 {
+    /// <summary>EXTENSION POINT: APPLICATION FLOW — podporované stavy životního cyklu žádosti.</summary>
     public enum ApplicationStatus
     {
         Draft,

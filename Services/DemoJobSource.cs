@@ -1,10 +1,16 @@
-using JobSearchApp.Models;
+using WorkScout.Models;
 
-namespace JobSearchApp.Services
+namespace WorkScout.Services
 {
-    // TODO: DEVELOPMENT DATA
-    // Po připojení prvního skutečného portálu tento zdroj odebrat z produkčního sestavení.
-    public sealed class TestJobSource : IJobSource
+    /// <summary>
+    /// Poskytuje deterministická ukázková data pro první release bez síťových volání.
+    /// </summary>
+    /// <remarks>
+    /// DEMO DATA: Až bude dostupný první produkční adaptér <see cref="IJobSource"/>,
+    /// composition root zvolí skutečné zdroje. Tento zdroj může zůstat pouze pro
+    /// ukázkový režim a automatické testy.
+    /// </remarks>
+    public sealed class DemoJobSource : IJobSource
     {
         public string Name => "Ukázková data";
 

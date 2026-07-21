@@ -1,5 +1,9 @@
-namespace JobSearchApp.Models
+namespace WorkScout.Models
 {
+    /// <summary>
+    /// EXTENSION POINT: INBOUND MAIL — metadata zprávy načtené z aplikační schránky.
+    /// ExternalMessageId slouží k idempotentnímu importu a ochraně před duplicitami.
+    /// </summary>
     public class InboundMessage
     {
         public int Id { get; set; }

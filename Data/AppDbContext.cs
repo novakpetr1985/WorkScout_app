@@ -1,9 +1,13 @@
-using JobSearchApp.Models;
+using WorkScout.Models;
 using Microsoft.EntityFrameworkCore;
 using System.IO;
 
-namespace JobSearchApp.Data
+namespace WorkScout.Data
 {
+    /// <summary>
+    /// FEATURE: LOCAL DATABASE — jediný EF Core kontext pro lokální SQLite databázi
+    /// uživatele i izolované databáze integračních testů.
+    /// </summary>
     public class AppDbContext : DbContext
     {
         public AppDbContext()
@@ -42,6 +46,9 @@ namespace JobSearchApp.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // FEATURE MAP: Schéma už nyní drží stabilní identitu nastavení, zdroje,
+            // nabídky, žádosti a příchozí komunikaci. UI 1.0.0 používá jen první dvě
+            // oblasti; zbytek je záměrný datový kontrakt pro navazující release.
             modelBuilder.Entity<AppSettingsEntity>()
                 .Property(settings => settings.Id)
                 .ValueGeneratedNever();
@@ -70,8 +77,9 @@ namespace JobSearchApp.Data
                 .HasForeignKey(message => message.JobApplicationId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // Výchozí seznam portálů - žádná zvláštní obrazovka na jejich správu
-            // zatím není, ale jde je snadno přidat/upravit i ručně v DB.
+            // FEATURE: PORTAL FILTER
+            // Seed drží stabilní ID pro první instalaci. Budoucí správa portálů musí
+            // používat novou migraci nebo synchronizační službu, ne ruční editaci DB.
             modelBuilder.Entity<Portal>().HasData(
                 new Portal { Id = 1, Name = "Jobs.cz", IsSelected = true },
                 new Portal { Id = 2, Name = "Prace.cz", IsSelected = true },

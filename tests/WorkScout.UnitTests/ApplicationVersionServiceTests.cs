@@ -1,4 +1,4 @@
-using JobSearchApp.Services;
+using WorkScout.Services;
 
 namespace WorkScout.UnitTests;
 

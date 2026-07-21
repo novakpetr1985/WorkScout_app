@@ -18,6 +18,8 @@ se při postupu release větve aktualizuje spolu s `WorkScout_app.csproj`.
 - Unit a integrační testy včetně skutečné migrace do dočasné SQLite databáze.
 - Jednotná GitHub Actions pipeline pro testy, coverage, diagnostiku a tag publish.
 - Publikační PowerShell skript, česká dokumentace a release checklist.
+- Mapa funkcí propojující hotové části, rozšiřovací body a konkrétní soubory.
+- Vizuální navigace README s ikonami, stavovými badges a CI odkazem.
 
 ### Změněno
 
@@ -25,6 +27,16 @@ se při postupu release větve aktualizuje spolu s `WorkScout_app.csproj`.
 - Release větev se postupně označuje `1.0.0-DEV`, `1.0.0-TEST` a `1.0.0`.
 - Databáze se ukládá do `%LocalAppData%\WorkScout` a používá EF migrace.
 - Výběr portálů se ukládá mezi spuštěními.
+- Interní namespace je sjednocený na `WorkScout` a ukázkový zdroj se jmenuje
+  `DemoJobSource`, aby nebyl zaměňovaný s testovacím projektem.
+- Seznam profesí se při aktualizaci znovu sestaví a nezachovává zastaralé hodnoty.
+- Testovací e-mail používá aktuální značku WorkScout a výslovně uvádí automatické odeslání.
+
+### Odstraněno
+
+- Duplicitní workflow `CI` a `Create release`; nahrazuje je jediná WorkScout pipeline.
+- Dynamické `Version.props`, lokální override verze a související nepoužívaná konfigurace.
+- Historické označení `JobSearchApp` a vývojové `TODO: DEVELOPMENT DATA` komentáře.
 
 ### Zabezpečení
 

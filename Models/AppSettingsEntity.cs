@@ -1,16 +1,17 @@
-namespace JobSearchApp.Models
+namespace WorkScout.Models
 {
-    // Jeden jediný řádek v DB - aplikace je jen pro jednoho uživatele,
-    // takže žádná tabulka Users, jen jednoduché nastavení.
-    // Jmenuje se "AppSettingsEntity" (ne "AppSettings"), aby nekolidovalo
-    // s názvem DbSet<AppSettingsEntity> AppSettings v AppDbContext.
+    /// <summary>
+    /// FEATURE: SINGLE-USER SETTINGS
+    /// Jediný řádek s ID 1 nahrazuje uživatelské účty, protože WorkScout 1.x je
+    /// lokální aplikace pro jednu osobu.
+    /// </summary>
     public class AppSettingsEntity
     {
         public int Id { get; set; }
 
         public string AppEmail { get; set; } = string.Empty;
 
-        // App password se ukládá zašifrované (DPAPI), nikdy v čitelné podobě.
+        // SECURITY: Hodnota obsahuje pouze DPAPI ciphertext, nikdy otevřený app password.
         public string AppPasswordEncrypted { get; set; } = string.Empty;
 
         public string UserEmail { get; set; } = string.Empty;
